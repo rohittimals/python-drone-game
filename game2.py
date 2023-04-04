@@ -54,8 +54,9 @@ def start_game():
     drone = Drone(DRONE_X, DRONE_Y, DRONE_WIDTH, DRONE_HEIGHT)
     obstacles = [Obstacle(WIDTH, random.randint(0, HEIGHT - obstacle_height))]
     game_running = True
+    game_ended = False
     start_button_hidden = True
-    restart_button_hidden = False
+    restart_button_hidden = True 
     global score; 
 
     # Main game loop
@@ -86,11 +87,6 @@ def start_game():
         if drone.right > WIDTH:
             drone.right = WIDTH
 
-        
-        final_score_text = font.render('Final Score: ' + str(score), True, WHITE)
-        screen.blit(final_score_text, (WIDTH/2 - 100, HEIGHT/2 + 18))
-        pygame.display.update()
-
         # Move the obstacles
         for obstacle in obstacles:
             obstacle.rect.x -= obstacle_speed
@@ -109,73 +105,80 @@ def start_game():
             new_obstacle = Obstacle(new_obstacle_x, new_obstacle_y)
             obstacles.append(new_obstacle)
 
-        # Remove obstacles that have gone off the screen
-        if obstacles[0].rect.right < 0:
-            obstacles.pop(0)
+        # Remove passed obstacles
+        for obstacle in obstacles:
+            if obstacle.rect.right < 0:
+                obstacles.remove(obstacle)
+                score += 1
 
-        # Check for collision with obstacles
+        # Check for collision
         for obstacle in obstacles:
             if drone.colliderect(obstacle.rect):
                 game_running = False
-                final_score_text = font.render('Final Score: ' + str(score), True, RED)
-                screen.blit(final_score_text, (WIDTH/2 - 100, HEIGHT/2 + 18))
-                restart_button_rect = pygame.draw.rect(screen, BLUE, (WIDTH/2 - 75, HEIGHT/2 + 54, 150, 50))
-                restart_button_text = font.render('Restart', True, WHITE)
-                screen.blit(restart_button_text, (WIDTH/2 - 40, HEIGHT/2 + 68))
+                game_ended = True
 
-        # Check for passing obstacles and update score
+        # Draw the screen
+        screen.fill(BLACK)
+
+        # Draw the drone
+        pygame.draw.rect(screen, BLUE, drone)
+
+        # Draw the obstacles
         for obstacle in obstacles:
-            if obstacle.rect.right < drone.left and not obstacle.passed:
-                obstacle.passed = True
-                score += 1
-                
+            pygame.draw.rect(screen, GREEN, obstacle.rect)
 
-            # Draw everything
-            screen.fill(BLACK)
-            pygame.draw.rect(screen, WHITE, drone)
-            for obstacle in obstacles:
-                pygame.draw.rect(screen, GREEN, obstacle.rect)
-                score_text = font.render('Score: ' + str(score), True, BLUE)
-                screen.blit(score_text, (10, 10))
-                
+        # Draw the score
+        score_text = font.render(f"Score: {score}", True, RED)
+        screen.blit(score_text, (20, 20))
 
-        # Update the screen
+        # Update the display
         pygame.display.update()
 
-        # Limit the frame rate
+        # Set the frame rate
         clock.tick(60)
 
+    # Game over screen
+    while game_ended:
+            # Handle events
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                game_ended = True
+
+                # Draw the screen
+                screen.fill(BLACK)
+
+                    # Draw the game over text
+            game_over_text = font.render("Game Over", True, BLUE)
+            screen.blit(game_over_text, (WIDTH/2 - game_over_text.get_width()/2, HEIGHT/2 - game_over_text.get_height()/2))
+
+                # Draw the final score
+            final_score_text = font.render(f"Final Score: {score}", True, BLUE)
+            screen.blit(final_score_text, (WIDTH/2 - final_score_text.get_width()/2, HEIGHT/2 - final_score_text.get_height()/2 + 25))
 
 
-# End game loop
-# Display game over message and final score
+            # Draw the restart button
+            restart_button = pygame.Rect(WIDTH/2 - 100, HEIGHT/2 + 50, 200, 50)
+            pygame.draw.rect(screen, RED, restart_button)
 
 
-# Wait for the player to click the restart button
-while True:
-    # Handle events
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            game_over_text = font.render('Game Over!', True, RED)
-            screen.blit(game_over_text, (WIDTH/2 - 100, HEIGHT/2 - 18))
-            final_score_text = font.render('Final Score: ' + str(score), True, WHITE)
-            screen.blit(final_score_text, (WIDTH/2 - 100, HEIGHT/2 + 18))
-            pygame.quit()
-            sys.exit()
-            
-        if event.type == pygame.MOUSEBUTTONDOWN:
+            restart_text = font.render("Restart", True, BLUE)
+            screen.blit(restart_text, (WIDTH/2 - restart_text.get_width()/2, HEIGHT/2 + 65 - restart_text.get_height()/2))
+            pygame.display.update()
+
+                    # Check for restart button click
             mouse_pos = pygame.mouse.get_pos()
-            if restart_button_rect.collidepoint(mouse_pos):
-                game_over_text = font.render('Game Over!', True, RED)
-                
-    # Draw the restart button
-                restart_button_rect = pygame.draw.rect(screen, BLUE, (WIDTH/2 - 75, HEIGHT/2 + 54, 150, 50))
-                restart_button_text = font.render('Restart', True, WHITE)
-                screen.blit(restart_button_text, (WIDTH/2 - 40, HEIGHT/2 + 68))
+            if restart_button.collidepoint(mouse_pos):
+                restart_button_hidden = False
+                if pygame.mouse.get_pressed()[0]:
+                    score = 0
+                    start_game()
 
-    # Update the screen
-    pygame.display.update()
+        # Update the display
+            pygame.display.update()
 
-    start_game()
-    pygame.quit()
+    # Set the frame rate
+            clock.tick(60)
 
+start_game()
+pygame.QUIT()
+sys.exit()
